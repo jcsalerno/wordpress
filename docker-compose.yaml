@@ -1,0 +1,51 @@
+version: "3.9"
+    
+services:
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: somewordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    networks:
+      - wordpress-overlay
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.db==true"
+      replicas: 1
+    
+  frontend:
+    image: wordpress:latest
+    volumes:
+      - wordpress_data:/var/www/html
+    ports:
+      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    networks:
+      - wordpress-overlay
+    deploy:
+      replicas: 3
+
+volumes:
+  db_data:
+  wordpress_data:
+    driver_opts:
+      type: "nfs"
+      o: "addr=172.89.0.20,rw,nolock"
+      device: ":/srv/wordpress"
+
+networks:
+  wordpress-overlay:
+    driver: overlay
+    attachable: true
+    name: wordpress-overlay
+    driver_opts:
+      encrypted: "true"
